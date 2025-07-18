@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "i769DuoxhoeqWzqXxodVB50FAhQIqbkVTq7iz6ODGHo=",
+  "Source": "EmailContentApi",
+  "BasePath": "_content/EmailContentApi",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}

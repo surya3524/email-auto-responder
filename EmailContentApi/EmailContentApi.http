@@ -1,6 +1,26 @@
-@EmailContentApi_HostAddress = http://localhost:5138
-
-GET {{EmailContentApi_HostAddress}}/weatherforecast/
+### Get all email contents
+GET https://localhost:7001/api/EmailContent
 Accept: application/json
 
-###
+### Get specific email content by ID
+GET https://localhost:7001/api/EmailContent/1
+Accept: application/json
+
+### Create new email content
+POST https://localhost:7001/api/EmailContent
+Content-Type: application/json
+
+{
+  "content": "This is a test email content for the API"
+}
+
+### Update email content
+PUT https://localhost:7001/api/EmailContent/1
+Content-Type: application/json
+
+{
+  "content": "This is the updated email content"
+}
+
+### Delete email content
+DELETE https://localhost:7001/api/EmailContent/1

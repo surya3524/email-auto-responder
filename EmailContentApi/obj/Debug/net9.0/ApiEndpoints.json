@@ -211,5 +211,73 @@
         "StatusCode": 500
       }
     ]
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.OpenAIController",
+    "Method": "GenerateEmbedding",
+    "RelativePath": "api/OpenAI/embed",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "EmailContentApi.Controllers.EmbeddingRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.OpenAIController",
+    "Method": "GenerateEmbeddingsForAllEmails",
+    "RelativePath": "api/OpenAI/embed-all-emails",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.OpenAIController",
+    "Method": "GenerateEmbeddingForEmail",
+    "RelativePath": "api/OpenAI/embed-email/{id}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.OpenAIController",
+    "Method": "TestOpenAI",
+    "RelativePath": "api/OpenAI/test",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.PineconeController",
+    "Method": "CreateIndex",
+    "RelativePath": "api/Pinecone/create-index",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "EmailContentApi.Controllers.PineconeIndexRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
   }
 ]

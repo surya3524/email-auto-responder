@@ -31,3 +31,34 @@ DELETE https://localhost:7001/api/EmailContent/1
 
 ### Manually trigger data seeding
 POST https://localhost:7001/api/EmailContent/seed
+
+### Create Pinecone index
+POST https://localhost:7001/api/Pinecone/create-index
+Content-Type: application/json
+
+{
+  "name": "email-embeddings",
+  "dimension": 1536,
+  "metric": "cosine",
+  "replicas": 1,
+  "shards": 1,
+  "pods": 1,
+  "pod_type": "p1.x1"
+}
+
+### Test OpenAI API key
+GET https://localhost:7001/api/OpenAI/test
+
+### Generate embedding for custom text
+POST https://localhost:7001/api/OpenAI/embed
+Content-Type: application/json
+
+{
+  "text": "This is a sample text to generate embeddings for."
+}
+
+### Generate embeddings for all emails (limited to 10)
+POST https://localhost:7001/api/OpenAI/embed-all-emails
+
+### Generate embedding for specific email by ID
+POST https://localhost:7001/api/OpenAI/embed-email/1

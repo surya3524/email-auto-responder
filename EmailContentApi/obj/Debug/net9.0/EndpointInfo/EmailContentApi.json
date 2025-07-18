@@ -339,6 +339,123 @@
           }
         }
       }
+    },
+    "/api/OpenAI/test": {
+      "get": {
+        "tags": [
+          "OpenAI"
+        ],
+        "summary": "Test OpenAI API key connectivity",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/OpenAI/embed": {
+      "post": {
+        "tags": [
+          "OpenAI"
+        ],
+        "summary": "Generate embeddings for a single text input",
+        "requestBody": {
+          "description": "The embedding request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbeddingRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbeddingRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbeddingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/OpenAI/embed-all-emails": {
+      "post": {
+        "tags": [
+          "OpenAI"
+        ],
+        "summary": "Generate embeddings for all email contents in the database",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/OpenAI/embed-email/{id}": {
+      "post": {
+        "tags": [
+          "OpenAI"
+        ],
+        "summary": "Generate embeddings for a specific email by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The email ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Pinecone/create-index": {
+      "post": {
+        "tags": [
+          "Pinecone"
+        ],
+        "summary": "Creates a new index in Pinecone",
+        "requestBody": {
+          "description": "The index creation request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PineconeIndexRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PineconeIndexRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PineconeIndexRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -367,6 +484,50 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmbeddingRequest": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PineconeIndexRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "dimension": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "metric": {
+            "type": "string",
+            "nullable": true
+          },
+          "replicas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "shards": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pods": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pod_type": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

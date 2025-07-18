@@ -71,6 +71,39 @@
             <returns>The total count of email contents</returns>
             <response code="200">Returns the count</response>
         </member>
+        <member name="M:EmailContentApi.Controllers.OpenAIController.TestOpenAI">
+            <summary>
+            Test OpenAI API key connectivity
+            </summary>
+            <returns>API key status and test result</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.OpenAIController.GenerateEmbedding(EmailContentApi.Controllers.EmbeddingRequest)">
+            <summary>
+            Generate embeddings for a single text input
+            </summary>
+            <param name="request">The embedding request</param>
+            <returns>The embedding vector</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.OpenAIController.GenerateEmbeddingsForAllEmails">
+            <summary>
+            Generate embeddings for all email contents in the database
+            </summary>
+            <returns>List of email contents with their embeddings</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.OpenAIController.GenerateEmbeddingForEmail(System.Int32)">
+            <summary>
+            Generate embeddings for a specific email by ID
+            </summary>
+            <param name="id">The email ID</param>
+            <returns>The email content with its embedding</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeController.CreateIndex(EmailContentApi.Controllers.PineconeIndexRequest)">
+            <summary>
+            Creates a new index in Pinecone
+            </summary>
+            <param name="request">The index creation request</param>
+            <returns>Status of the index creation</returns>
+        </member>
         <member name="T:EmailContentApi.Migrations.InitialCreate">
             <inheritdoc />
         </member>

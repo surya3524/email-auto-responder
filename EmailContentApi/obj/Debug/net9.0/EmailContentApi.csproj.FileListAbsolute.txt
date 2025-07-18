@@ -169,3 +169,5 @@ C:\Repos\text-inference\EmailContentApi\bin\Debug\net9.0\Swashbuckle.AspNetCore.
 C:\Repos\text-inference\EmailContentApi\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 C:\Repos\text-inference\EmailContentApi\obj\Debug\net9.0\EmailContentApi.xml
 C:\Repos\text-inference\EmailContentApi\bin\Debug\net9.0\EmailContentApi.xml
+C:\Repos\text-inference\EmailContentApi\bin\Debug\net9.0\OpenAI.dll
+C:\Repos\text-inference\EmailContentApi\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt

@@ -2,6 +2,10 @@
 GET https://localhost:7001/api/EmailContent
 Accept: application/json
 
+### Get email content count
+GET https://localhost:7001/api/EmailContent/count
+Accept: application/json
+
 ### Get specific email content by ID
 GET https://localhost:7001/api/EmailContent/1
 Accept: application/json
@@ -24,3 +28,6 @@ Content-Type: application/json
 
 ### Delete email content
 DELETE https://localhost:7001/api/EmailContent/1
+
+### Manually trigger data seeding
+POST https://localhost:7001/api/EmailContent/seed

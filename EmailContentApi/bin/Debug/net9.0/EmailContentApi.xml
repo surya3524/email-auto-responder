@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>EmailContentApi</name>
+    </assembly>
+    <members>
+        <member name="T:EmailContentApi.Controllers.EmailContentController">
+            <summary>
+            Controller for managing email content operations
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EmailContentController.GetEmailContents">
+            <summary>
+            Retrieves all email contents from the database
+            </summary>
+            <returns>A list of all email contents</returns>
+            <response code="200">Returns the list of email contents</response>
+            <response code="500">If there was an internal server error</response>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EmailContentController.GetEmailContent(System.Int32)">
+            <summary>
+            Retrieves a specific email content by its ID
+            </summary>
+            <param name="id">The ID of the email content to retrieve</param>
+            <returns>The email content with the specified ID</returns>
+            <response code="200">Returns the requested email content</response>
+            <response code="404">If the email content with the specified ID was not found</response>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EmailContentController.CreateEmailContent(EmailContentApi.DTOs.CreateEmailContentDto)">
+            <summary>
+            Creates a new email content entry
+            </summary>
+            <param name="createDto">The email content data to create</param>
+            <returns>The newly created email content</returns>
+            <response code="201">Returns the newly created email content</response>
+            <response code="400">If the content is null or empty</response>
+            <response code="500">If there was an internal server error</response>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EmailContentController.UpdateEmailContent(System.Int32,EmailContentApi.DTOs.CreateEmailContentDto)">
+            <summary>
+            Updates an existing email content entry
+            </summary>
+            <param name="id">The ID of the email content to update</param>
+            <param name="updateDto">The updated email content data</param>
+            <returns>No content on successful update</returns>
+            <response code="204">If the email content was successfully updated</response>
+            <response code="400">If the content is null or empty</response>
+            <response code="404">If the email content with the specified ID was not found</response>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EmailContentController.DeleteEmailContent(System.Int32)">
+            <summary>
+            Deletes an email content entry
+            </summary>
+            <param name="id">The ID of the email content to delete</param>
+            <returns>No content on successful deletion</returns>
+            <response code="204">If the email content was successfully deleted</response>
+            <response code="404">If the email content with the specified ID was not found</response>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EmailContentController.SeedData">
+            <summary>
+            Manually triggers data seeding (for testing purposes)
+            </summary>
+            <returns>Status of the seeding operation</returns>
+            <response code="200">If seeding was successful</response>
+            <response code="500">If there was an error during seeding</response>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EmailContentController.GetEmailContentCount">
+            <summary>
+            Gets the count of email contents in the database
+            </summary>
+            <returns>The total count of email contents</returns>
+            <response code="200">Returns the count</response>
+        </member>
+        <member name="T:EmailContentApi.Migrations.InitialCreate">
+            <inheritdoc />
+        </member>
+        <member name="M:EmailContentApi.Migrations.InitialCreate.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:EmailContentApi.Migrations.InitialCreate.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:EmailContentApi.Migrations.InitialCreate.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

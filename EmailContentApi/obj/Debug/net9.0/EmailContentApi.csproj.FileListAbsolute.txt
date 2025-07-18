@@ -164,3 +164,8 @@ C:\Repos\text-inference\EmailContentApi\obj\Debug\net9.0\refint\EmailContentApi.
 C:\Repos\text-inference\EmailContentApi\obj\Debug\net9.0\EmailContentApi.pdb
 C:\Repos\text-inference\EmailContentApi\obj\Debug\net9.0\EmailContentApi.genruntimeconfig.cache
 C:\Repos\text-inference\EmailContentApi\obj\Debug\net9.0\ref\EmailContentApi.dll
+C:\Repos\text-inference\EmailContentApi\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
+C:\Repos\text-inference\EmailContentApi\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\Repos\text-inference\EmailContentApi\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+C:\Repos\text-inference\EmailContentApi\obj\Debug\net9.0\EmailContentApi.xml
+C:\Repos\text-inference\EmailContentApi\bin\Debug\net9.0\EmailContentApi.xml

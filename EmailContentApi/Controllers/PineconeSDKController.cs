@@ -141,6 +141,35 @@ namespace EmailContentApi.Controllers
             return Ok(new { message = "Upsert Records succesfully", details = "Check console for response details." });
 
         }
+        /// <summary>
+        /// Performs a semantic search on the Pinecone index
+        /// </summary>
+        /// <param name="queryText">The text to search for</param>
+        /// <returns>Search results</returns>
+        [HttpPost("semantic-search")]
+        public async Task<IActionResult> SemanticSearch([FromBody] string queryText)
+        {
+            var apiKey = _configuration["Pinecone:ApiKey"];
+            var indexHost = _configuration["Pinecone:IndexHost"];
+
+            var pinecone = new PineconeClient(apiKey);
+            var index = pinecone.Index(host: indexHost);
+
+            var response = await index.SearchRecordsAsync(
+                "example-namespace",
+                new SearchRecordsRequest
+                {
+                    Query = new SearchRecordsRequestQuery
+                    {
+                        TopK = 4,
+                        Inputs = new Dictionary<string, object?> { { "text", queryText } },
+                    },
+                    Fields = new[] { "category", "chunk_text" },
+                }
+            );
+
+            return Ok(new { message = "Semantic search completed", results = response });
+        }
 
     }
 

@@ -138,7 +138,7 @@ namespace EmailContentApi.Controllers
         },
     ]
 );
-            return Ok(new { message = "Serverless index creation initiated", details = "Check console for response details." });
+            return Ok(new { message = "Upsert Records succesfully", details = "Check console for response details." });
 
         }
 

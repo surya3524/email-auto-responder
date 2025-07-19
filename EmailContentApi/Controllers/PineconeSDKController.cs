@@ -141,11 +141,8 @@ namespace EmailContentApi.Controllers
             return Ok(new { message = "Upsert Records succesfully", details = "Check console for response details." });
 
         }
-        /// <summary>
-        /// Performs a semantic search on the Pinecone index
-        /// </summary>
-        /// <param name="queryText">The text to search for</param>
-        /// <returns>Search results</returns>
+    
+        // Replace the semantic search logic with threshold-based filtering:
         [HttpPost("semantic-search")]
         public async Task<IActionResult> SemanticSearch([FromBody] string queryText)
         {
@@ -155,20 +152,24 @@ namespace EmailContentApi.Controllers
             var pinecone = new PineconeClient(apiKey);
             var index = pinecone.Index(host: indexHost);
 
+            // Request more results than needed, then filter by score
             var response = await index.SearchRecordsAsync(
                 "example-namespace",
                 new SearchRecordsRequest
                 {
                     Query = new SearchRecordsRequestQuery
                     {
-                        TopK = 4,
+                        TopK = 10, // Get more results to allow filtering
                         Inputs = new Dictionary<string, object?> { { "text", queryText } },
                     },
                     Fields = new[] { "category", "chunk_text" },
                 }
             );
 
-            return Ok(new { message = "Semantic search completed", results = response });
+            var closeMatches = response?.Result.Hits?
+                .Where(r => r.Score >= 0.35)
+                .ToList();
+            return Ok(new { message = "Semantic search completed", results = closeMatches });
         }
 
     }

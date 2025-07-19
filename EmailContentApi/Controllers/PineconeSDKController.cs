@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Text;
+using System.Text.Json.Serialization;
 using Pinecone;
 
 namespace EmailContentApi.Controllers
@@ -263,33 +264,41 @@ namespace EmailContentApi.Controllers
         private string ConstructAugmentedPrompt(List<Pinecone.Hit> passages, string query)
         {
             var promptBuilder = new StringBuilder();
-            
+
             // System instruction
             promptBuilder.AppendLine("System: Use the passages below to answer the query. Respond ONLY using this information. If the information is not sufficient to answer the question, say 'I don't have enough information to answer this question based on the provided context.'");
             promptBuilder.AppendLine();
 
             // Context section
-            promptBuilder.AppendLine("Context:");
-            for (int i = 0; i < passages.Count; i++)
+            if (passages != null && passages.Any())
             {
-                var passage = passages[i];
-                var text = passage.AdditionalProperties.ContainsKey("chunk_text") 
-                    ? passage.AdditionalProperties["chunk_text"].ToString() ?? "" 
-                    : "";
-                
-                if (!string.IsNullOrWhiteSpace(text))
+                promptBuilder.AppendLine("Context:");
+                for (int i = 0; i < passages.Count; i++)
                 {
-                    promptBuilder.AppendLine("---");
-                    promptBuilder.AppendLine($"[Passage {i + 1}]");
-                    promptBuilder.AppendLine(text);
-                    promptBuilder.AppendLine("---");
-                    promptBuilder.AppendLine();
+                    var passage = passages[i];
+                    if (passage.Fields != null && passage.Fields.TryGetValue("chunk_text", out var chunkText) && chunkText != null)
+                    {
+                        var text = chunkText.ToString() ?? "";
+
+                        if (!string.IsNullOrWhiteSpace(text))
+                        {
+                            promptBuilder.AppendLine("---");
+                            promptBuilder.AppendLine($"[Passage {i + 1}]");
+                            promptBuilder.AppendLine(text);
+                            promptBuilder.AppendLine("---");
+                            promptBuilder.AppendLine();
+                        }
+                    }
                 }
+            }
+            else
+            {
+                promptBuilder.AppendLine("No relevant passages were found.");
             }
 
             // User query
             promptBuilder.AppendLine($"User Query: {query}");
-            
+
             return promptBuilder.ToString();
         }
 
@@ -320,8 +329,46 @@ namespace EmailContentApi.Controllers
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
-                var responseObject = JsonSerializer.Deserialize<OpenAIResponse>(responseContent);
-                return responseObject?.Choices?.FirstOrDefault()?.Message?.Content ?? "No response generated";
+                Console.WriteLine($"OpenAI Response: {responseContent}");
+                
+                try
+                {
+                    // Use JsonDocument for more flexible parsing
+                    using var document = JsonDocument.Parse(responseContent);
+                    var root = document.RootElement;
+                    
+                    if (root.TryGetProperty("choices", out var choices) && choices.ValueKind == JsonValueKind.Array)
+                    {
+                        var firstChoice = choices.EnumerateArray().FirstOrDefault();
+                        if (firstChoice.ValueKind != JsonValueKind.Undefined)
+                        {
+                            if (firstChoice.TryGetProperty("message", out var message) && 
+                                message.TryGetProperty("content", out var contentElement))
+                            {
+                                var responseFromLLM = contentElement.GetString() ?? "No response generated";
+                                Console.WriteLine($"Extracted content: {responseFromLLM}");
+                                return responseFromLLM;
+                            }
+                        }
+                    }
+                    
+                    Console.WriteLine("Could not extract content using JsonDocument, trying model deserialization...");
+                    
+                    // Fallback: try to deserialize with our model
+                    var responseObject = JsonSerializer.Deserialize<OpenAIResponse>(responseContent, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    var fallbackContent = responseObject?.Choices?.FirstOrDefault()?.Message?.Content ?? "No response generated";
+                    Console.WriteLine($"Fallback content: {fallbackContent}");
+                    return fallbackContent;
+                }
+                catch (JsonException ex)
+                {
+                    Console.WriteLine($"JSON parsing error: {ex.Message}");
+                    Console.WriteLine($"Response content: {responseContent}");
+                    return "Error parsing OpenAI response";
+                }
             }
             else
             {
@@ -389,17 +436,56 @@ namespace EmailContentApi.Controllers
     // OpenAI API response models
     public class OpenAIResponse
     {
+        [JsonPropertyName("id")]
+        public string? Id { get; set; }
+        
+        [JsonPropertyName("object")]
+        public string? Object { get; set; }
+        
+        [JsonPropertyName("created")]
+        public long? Created { get; set; }
+        
+        [JsonPropertyName("model")]
+        public string? Model { get; set; }
+        
+        [JsonPropertyName("choices")]
         public List<OpenAIChoice>? Choices { get; set; }
+        
+        [JsonPropertyName("usage")]
+        public OpenAIUsage? Usage { get; set; }
     }
 
     public class OpenAIChoice
     {
+        [JsonPropertyName("index")]
+        public int? Index { get; set; }
+        
+        [JsonPropertyName("message")]
         public OpenAIMessage? Message { get; set; }
+        
+        [JsonPropertyName("finish_reason")]
+        public string? FinishReason { get; set; }
     }
 
     public class OpenAIMessage
     {
+        [JsonPropertyName("role")]
+        public string? Role { get; set; }
+        
+        [JsonPropertyName("content")]
         public string? Content { get; set; }
+    }
+
+    public class OpenAIUsage
+    {
+        [JsonPropertyName("prompt_tokens")]
+        public int? PromptTokens { get; set; }
+        
+        [JsonPropertyName("completion_tokens")]
+        public int? CompletionTokens { get; set; }
+        
+        [JsonPropertyName("total_tokens")]
+        public int? TotalTokens { get; set; }
     }
 
 public class ServerlessIndexRequest

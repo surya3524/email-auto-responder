@@ -172,9 +172,236 @@ namespace EmailContentApi.Controllers
             return Ok(new { message = "Semantic search completed", results = closeMatches });
         }
 
+        /// <summary>
+        /// Performs semantic search and generates an augmented LLM response
+        /// </summary>
+        /// <param name="request">Query request with optional parameters</param>
+        /// <returns>Generated response based on retrieved context</returns>
+        [HttpPost("augmented-search")]
+        public async Task<IActionResult> AugmentedSearch([FromBody] AugmentedSearchRequest request)
+        {
+            try
+            {
+                var apiKey = _configuration["Pinecone:ApiKey"];
+                var indexHost = _configuration["Pinecone:IndexHost"];
+                var openAiApiKey = _configuration["OpenAI:ApiKey"];
+
+                if (string.IsNullOrEmpty(openAiApiKey))
+                {
+                    return BadRequest(new { error = "OpenAI API key not configured" });
+                }
+
+                var pinecone = new PineconeClient(apiKey);
+                var index = pinecone.Index(host: indexHost);
+
+                // Step 1: Perform semantic search
+                var searchResponse = await index.SearchRecordsAsync(
+                    "example-namespace",
+                    new SearchRecordsRequest
+                    {
+                        Query = new SearchRecordsRequestQuery
+                        {
+                            TopK = request.TopK ?? 10,
+                            Inputs = new Dictionary<string, object?> { { "text", request.Query } },
+                        },
+                        Fields = new[] { "category", "chunk_text" },
+                    }
+                );
+
+                // Step 2: Filter and order results by relevance
+                var relevantPassages = searchResponse?.Result.Hits?
+                    .Where(r => r.Score >= (request.ScoreThreshold ?? 0.35))
+                    .OrderByDescending(r => r.Score)
+                    .Take(request.MaxPassages ?? 5)
+                    .ToList();
+
+                if (relevantPassages == null || !relevantPassages.Any())
+                {
+                    return Ok(new AugmentedSearchResponse
+                    {
+                        Answer = "I don't have enough relevant information to answer your question based on the provided context.",
+                        SourcePassages = new List<PassageInfo>(),
+                        SearchScore = 0.0,
+                        HasRelevantContext = false
+                    });
+                }
+
+                // Step 3: Construct the augmented prompt
+                var augmentedPrompt = ConstructAugmentedPrompt(relevantPassages, request.Query);
+
+                // Step 4: Generate LLM response
+                var llmResponse = await GenerateLLMResponse(augmentedPrompt, openAiApiKey);
+
+                // Step 5: Prepare response with source passages
+                var sourcePassages = relevantPassages.Select(p => new PassageInfo
+                {
+                    Id = p.Id,
+
+                    Text = p.AdditionalProperties.ContainsKey("chunk_text") ? p.AdditionalProperties["chunk_text"].ToString() ?? "" : "",
+                    Category = p.AdditionalProperties.ContainsKey("category") ? p.AdditionalProperties["category"].ToString() ?? "" : "",
+                    Score = p.Score
+                }).ToList();
+
+                return Ok(new AugmentedSearchResponse
+                {
+                    Answer = llmResponse,
+                    SourcePassages = sourcePassages,
+                    SearchScore = relevantPassages.First().Score,
+                    HasRelevantContext = true,
+                    PromptUsed = request.IncludePrompt ? augmentedPrompt : null
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "An error occurred during augmented search", details = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Constructs an augmented prompt with retrieved context
+        /// </summary>
+        private string ConstructAugmentedPrompt(List<Pinecone.Hit> passages, string query)
+        {
+            var promptBuilder = new StringBuilder();
+            
+            // System instruction
+            promptBuilder.AppendLine("System: Use the passages below to answer the query. Respond ONLY using this information. If the information is not sufficient to answer the question, say 'I don't have enough information to answer this question based on the provided context.'");
+            promptBuilder.AppendLine();
+
+            // Context section
+            promptBuilder.AppendLine("Context:");
+            for (int i = 0; i < passages.Count; i++)
+            {
+                var passage = passages[i];
+                var text = passage.AdditionalProperties.ContainsKey("chunk_text") 
+                    ? passage.AdditionalProperties["chunk_text"].ToString() ?? "" 
+                    : "";
+                
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    promptBuilder.AppendLine("---");
+                    promptBuilder.AppendLine($"[Passage {i + 1}]");
+                    promptBuilder.AppendLine(text);
+                    promptBuilder.AppendLine("---");
+                    promptBuilder.AppendLine();
+                }
+            }
+
+            // User query
+            promptBuilder.AppendLine($"User Query: {query}");
+            
+            return promptBuilder.ToString();
+        }
+
+        /// <summary>
+        /// Generates LLM response using OpenAI API
+        /// </summary>
+        private async Task<string> GenerateLLMResponse(string prompt, string apiKey)
+        {
+            var httpClient = _httpClientFactory.CreateClient();
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+            var requestBody = new
+            {
+                model = "gpt-3.5-turbo",
+                messages = new[]
+                {
+                    new { role = "user", content = prompt }
+                },
+                max_tokens = 500,
+                temperature = 0.3
+            };
+
+            var jsonContent = JsonSerializer.Serialize(requestBody);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var responseObject = JsonSerializer.Deserialize<OpenAIResponse>(responseContent);
+                return responseObject?.Choices?.FirstOrDefault()?.Message?.Content ?? "No response generated";
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"OpenAI API error: {response.StatusCode} - {errorContent}");
+            }
+        }
+
+        /// <summary>
+        /// Test endpoint to verify augmented search functionality
+        /// </summary>
+        /// <returns>Test response</returns>
+        [HttpGet("test-augmented-search")]
+        public async Task<IActionResult> TestAugmentedSearch()
+        {
+            try
+            {
+                var testRequest = new AugmentedSearchRequest
+                {
+                    Query = "What are AAPL's plans for Q3 and Q4?",
+                    TopK = 5,
+                    ScoreThreshold = 0.3,
+                    MaxPassages = 3,
+                    IncludePrompt = true
+                };
+
+                // Call the augmented search method
+                var result = await AugmentedSearch(testRequest);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Test failed", details = ex.Message });
+            }
+        }
     }
 
-// Request models that match the Pinecone SDK structure
+    // Request/Response DTOs for augmented search
+    public class AugmentedSearchRequest
+    {
+        public string Query { get; set; } = string.Empty;
+        public int? TopK { get; set; } = 10;
+        public double? ScoreThreshold { get; set; } = 0.35;
+        public int? MaxPassages { get; set; } = 5;
+        public bool IncludePrompt { get; set; } = false;
+    }
+
+    public class AugmentedSearchResponse
+    {
+        public string Answer { get; set; } = string.Empty;
+        public List<PassageInfo> SourcePassages { get; set; } = new();
+        public double SearchScore { get; set; }
+        public bool HasRelevantContext { get; set; }
+        public string? PromptUsed { get; set; }
+    }
+
+    public class PassageInfo
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public double Score { get; set; }
+    }
+
+    // OpenAI API response models
+    public class OpenAIResponse
+    {
+        public List<OpenAIChoice>? Choices { get; set; }
+    }
+
+    public class OpenAIChoice
+    {
+        public OpenAIMessage? Message { get; set; }
+    }
+
+    public class OpenAIMessage
+    {
+        public string? Content { get; set; }
+    }
+
 public class ServerlessIndexRequest
     {
         public string Name { get; set; } = string.Empty;

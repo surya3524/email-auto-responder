@@ -49,6 +49,9 @@ Content-Type: application/json
 ### Test OpenAI API key
 GET https://localhost:7001/api/OpenAI/test
 
+### Test Pinecone API key
+GET https://localhost:7001/api/PineconeIndex/test
+
 ### Generate embedding for custom text
 POST https://localhost:7001/api/OpenAI/embed
 Content-Type: application/json
@@ -62,3 +65,26 @@ POST https://localhost:7001/api/OpenAI/embed-all-emails
 
 ### Generate embedding for specific email by ID
 POST https://localhost:7001/api/OpenAI/embed-email/1
+
+### Create Pinecone index (using your code structure)
+POST https://localhost:7001/api/PineconeIndex/create
+
+### Create custom Pinecone index
+POST https://localhost:7001/api/PineconeIndex/create-custom
+Content-Type: application/json
+
+{
+  "name": "custom-emails-index",
+  "dimension": 1536,
+  "metric": "cosine",
+  "replicas": 1,
+  "shards": 1,
+  "pods": 1,
+  "pod_type": "p1.x1"
+}
+
+### List all Pinecone indexes
+GET https://localhost:7001/api/PineconeIndex/list
+
+### Delete Pinecone index
+DELETE https://localhost:7001/api/PineconeIndex/delete/emails-index

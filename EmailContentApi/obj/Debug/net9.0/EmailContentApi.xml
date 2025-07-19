@@ -104,6 +104,47 @@
             <param name="request">The index creation request</param>
             <returns>Status of the index creation</returns>
         </member>
+        <member name="M:EmailContentApi.Controllers.PineconeIndexController.TestPinecone">
+            <summary>
+            Test Pinecone API connectivity and credentials
+            </summary>
+            <returns>API key status and test result</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeIndexController.CreateIndex">
+            <summary>
+            Creates a new Pinecone index using the specified configuration
+            </summary>
+            <returns>Status of the index creation</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeIndexController.CreateCustomIndex(EmailContentApi.Controllers.PineconeIndexRequest)">
+            <summary>
+            Creates a Pinecone index with custom configuration
+            </summary>
+            <param name="request">Custom index configuration</param>
+            <returns>Status of the index creation</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeIndexController.ListIndexes">
+            <summary>
+            Lists all Pinecone indexes
+            </summary>
+            <returns>List of all indexes</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeIndexController.DeleteIndex(System.String)">
+            <summary>
+            Deletes a Pinecone index
+            </summary>
+            <param name="indexName">Name of the index to delete</param>
+            <returns>Status of the index deletion</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeIndexController.CreatePineconeIndexAsync(System.Net.Http.HttpClient,System.String,EmailContentApi.Controllers.PineconeIndexRequest)">
+            <summary>
+            Creates a Pinecone index using the provided configuration
+            </summary>
+            <param name="client">HTTP client</param>
+            <param name="environment">Pinecone environment</param>
+            <param name="customConfig">Optional custom configuration</param>
+            <returns>Creation result</returns>
+        </member>
         <member name="T:EmailContentApi.Migrations.InitialCreate">
             <inheritdoc />
         </member>

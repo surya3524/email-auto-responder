@@ -8,6 +8,25 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpClient("PineconeClient", client =>
+{
+    client.Timeout = TimeSpan.FromMinutes(5);
+    client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    // Configure proxy if needed
+    UseProxy = true,
+    Proxy = System.Net.WebRequest.GetSystemWebProxy(),
+    // Or set specific proxy:
+    // Proxy = new System.Net.WebProxy("http://your-proxy-server:port"),
+    
+    // Additional settings for corporate environments
+    AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
+    AllowAutoRedirect = true,
+    UseCookies = false
+});
+
+// Add a general HTTP client for other services
 builder.Services.AddHttpClient();
 
 // Configure Swagger/OpenAPI

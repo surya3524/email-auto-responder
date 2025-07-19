@@ -56,14 +56,14 @@ namespace EmailContentApi.Controllers
         }
     }
 
-    public class PineconeIndexRequest
-    {
-        public string name { get; set; } = string.Empty;
-        public int dimension { get; set; }
-        public string metric { get; set; } = "cosine"; // or "euclidean", "dotproduct"
-        public int replicas { get; set; } = 1;
-        public int shards { get; set; } = 1;
-        public int pods { get; set; } = 1;
-        public string pod_type { get; set; } = "p1.x1";
-    }
+    //public class PineconeIndexRequest
+    //{
+    //    public string name { get; set; } = string.Empty;
+    //    public int dimension { get; set; }
+    //    public string metric { get; set; } = "cosine"; // or "euclidean", "dotproduct"
+    //    public int replicas { get; set; } = 1;
+    //    public int shards { get; set; } = 1;
+    //    public int pods { get; set; } = 1;
+    //    public string pod_type { get; set; } = "p1.x1";
+    //}
 } 

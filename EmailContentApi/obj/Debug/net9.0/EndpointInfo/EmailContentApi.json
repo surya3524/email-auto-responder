@@ -456,6 +456,102 @@
           }
         }
       }
+    },
+    "/api/PineconeIndex/test": {
+      "get": {
+        "tags": [
+          "PineconeIndex"
+        ],
+        "summary": "Test Pinecone API connectivity and credentials",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/PineconeIndex/create": {
+      "post": {
+        "tags": [
+          "PineconeIndex"
+        ],
+        "summary": "Creates a new Pinecone index using the specified configuration",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/PineconeIndex/create-custom": {
+      "post": {
+        "tags": [
+          "PineconeIndex"
+        ],
+        "summary": "Creates a Pinecone index with custom configuration",
+        "requestBody": {
+          "description": "Custom index configuration",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PineconeIndexRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PineconeIndexRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PineconeIndexRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/PineconeIndex/list": {
+      "get": {
+        "tags": [
+          "PineconeIndex"
+        ],
+        "summary": "Lists all Pinecone indexes",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/PineconeIndex/delete/{indexName}": {
+      "delete": {
+        "tags": [
+          "PineconeIndex"
+        ],
+        "summary": "Deletes a Pinecone index",
+        "parameters": [
+          {
+            "name": "indexName",
+            "in": "path",
+            "description": "Name of the index to delete",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {

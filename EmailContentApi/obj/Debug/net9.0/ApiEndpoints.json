@@ -279,5 +279,67 @@
       }
     ],
     "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.PineconeIndexController",
+    "Method": "CreateIndex",
+    "RelativePath": "api/PineconeIndex/create",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.PineconeIndexController",
+    "Method": "CreateCustomIndex",
+    "RelativePath": "api/PineconeIndex/create-custom",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "EmailContentApi.Controllers.PineconeIndexRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.PineconeIndexController",
+    "Method": "DeleteIndex",
+    "RelativePath": "api/PineconeIndex/delete/{indexName}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "indexName",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.PineconeIndexController",
+    "Method": "ListIndexes",
+    "RelativePath": "api/PineconeIndex/list",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.PineconeIndexController",
+    "Method": "TestPinecone",
+    "RelativePath": "api/PineconeIndex/test",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
   }
 ]

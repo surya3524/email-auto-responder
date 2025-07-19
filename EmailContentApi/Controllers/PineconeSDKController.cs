@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Text;
@@ -28,69 +28,6 @@ namespace EmailContentApi.Controllers
         public async Task<IActionResult> CreateServerlessIndex([FromBody] ServerlessIndexRequest request)
         {
             var apiKey = _configuration["Pinecone:ApiKey"];
-            //var environment = _configuration["Pinecone:Environment"];
-            //var projectId = _configuration["Pinecone:ProjectId"];
-
-            //if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(environment))
-            //{
-            //    return BadRequest("Pinecone API key or environment is not configured.");
-            //}
-
-            //try
-            //{
-            //    var client = _httpClientFactory.CreateClient("PineconeClient");
-            //    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Api-Key", apiKey);
-            //    if (!string.IsNullOrWhiteSpace(projectId))
-            //    {
-            //        if (!client.DefaultRequestHeaders.Contains("x-project-id"))
-            //            client.DefaultRequestHeaders.Add("x-project-id", projectId);
-            //    }
-
-            //    var payload = new
-            //    {
-            //        name = request.Name,
-            //        dimension = request.Dimension,
-            //        metric = request.Metric,
-            //        spec = new
-            //        {
-            //            serverless = new
-            //            {
-            //                cloud = request.Spec.Serverless.Cloud,
-            //                region = request.Spec.Serverless.Region
-            //            }
-            //        },
-            //        deletion_protection = request.DeletionProtection
-            //    };
-
-            //    var json = JsonSerializer.Serialize(payload);
-            //    var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            //    var url = $"https://controller.{environment}.pinecone.io/databases";
-
-            //    Console.WriteLine($"=== Creating Serverless Index ===");
-            //    Console.WriteLine($"URL: {url}");
-            //    Console.WriteLine($"Payload: {json}");
-
-            //    var response = await client.PostAsync(url, content);
-            //    var responseBody = await response.Content.ReadAsStringAsync();
-
-            //    Console.WriteLine($"Response Status: {response.StatusCode}");
-            //    Console.WriteLine($"Response Body: {responseBody}");
-
-            //    if (response.IsSuccessStatusCode)
-            //    {
-            //        return Ok(new { message = "Serverless index created successfully!", details = responseBody });
-            //    }
-            //    else
-            //    {
-            //        return StatusCode((int)response.StatusCode, new { message = "Failed to create serverless index", error = responseBody });
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    return StatusCode(500, new { message = "Error creating serverless index", error = ex.Message });
-            //}
-
 
             var pinecone = new PineconeClient(apiKey);
 
@@ -142,173 +79,73 @@ namespace EmailContentApi.Controllers
             return Ok(new { message = "Serverless index creation initiated", details = "Check console for response details." });
 
         }
-
         /// <summary>
-        /// Creates a pod-based Pinecone index
+        /// Adds records to an existing Pinecone index
         /// </summary>
-        /// <param name="request">Pod-based index creation request</param>
-        /// <returns>Status of the index creation</returns>
-        [HttpPost("create-pod")]
-        public async Task<IActionResult> CreatePodIndex([FromBody] PodIndexRequest request)
+        /// <param name="records">List of records to upsert</param>
+        /// <returns>Status of the upsert operation</returns>
+        [HttpPost("upsert-records")]
+        public async Task<IActionResult> UpsertRecords([FromBody] List<UpsertRecordRequest> records)
         {
             var apiKey = _configuration["Pinecone:ApiKey"];
-            var environment = _configuration["Pinecone:Environment"];
-            var projectId = _configuration["Pinecone:ProjectId"];
+            var indexHost = _configuration["Pinecone:IndexHost"];
 
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(environment))
-            {
-                return BadRequest("Pinecone API key or environment is not configured.");
-            }
+            var pinecone = new PineconeClient(apiKey);
+            var index = pinecone.Index(host: indexHost);
 
-            try
-            {
-                var client = _httpClientFactory.CreateClient("PineconeClient");
-                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Api-Key", apiKey);
-                if (!string.IsNullOrWhiteSpace(projectId))
-                {
-                    if (!client.DefaultRequestHeaders.Contains("x-project-id"))
-                        client.DefaultRequestHeaders.Add("x-project-id", projectId);
-                }
-
-                var payload = new
-                {
-                    name = request.Name,
-                    dimension = request.Dimension,
-                    metric = request.Metric,
-                    spec = new
-                    {
-                        pod = new
-                        {
-                            environment = request.Spec.Pod.Environment,
-                            pod_type = request.Spec.Pod.PodType,
-                            pods = request.Spec.Pod.Pods
-                        }
-                    },
-                    deletion_protection = request.DeletionProtection
-                };
-
-                var json = JsonSerializer.Serialize(payload);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var url = $"https://controller.{environment}.pinecone.io/databases";
-                
-                Console.WriteLine($"=== Creating Pod Index ===");
-                Console.WriteLine($"URL: {url}");
-                Console.WriteLine($"Payload: {json}");
-
-                var response = await client.PostAsync(url, content);
-                var responseBody = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine($"Response Status: {response.StatusCode}");
-                Console.WriteLine($"Response Body: {responseBody}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return Ok(new { message = "Pod index created successfully!", details = responseBody });
-                }
-                else
-                {
-                    return StatusCode((int)response.StatusCode, new { message = "Failed to create pod index", error = responseBody });
-                }
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error creating pod index", error = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// Lists all indexes with detailed information
-        /// </summary>
-        /// <returns>List of all indexes with their specifications</returns>
-        [HttpGet("list-detailed")]
-        public async Task<IActionResult> ListIndexesDetailed()
+            await index.UpsertRecordsAsync(
+    "example-namespace",
+    [
+        new UpsertRecord
         {
-            var apiKey = _configuration["Pinecone:ApiKey"];
-            var environment = _configuration["Pinecone:Environment"];
-            var projectId = _configuration["Pinecone:ProjectId"];
-
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(environment))
+            Id = "rec1",
+            AdditionalProperties =
             {
-                return BadRequest("Pinecone API key or environment is not configured.");
-            }
-
-            try
-            {
-                var client = _httpClientFactory.CreateClient("PineconeClient");
-                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Api-Key", apiKey);
-                if (!string.IsNullOrWhiteSpace(projectId))
-                {
-                    if (!client.DefaultRequestHeaders.Contains("x-project-id"))
-                        client.DefaultRequestHeaders.Add("x-project-id", projectId);
-                }
-
-                var response = await client.GetAsync($"https://controller.{environment}.pinecone.io/databases");
-                var responseBody = await response.Content.ReadAsStringAsync();
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return Ok(new { message = "Indexes retrieved successfully", indexes = responseBody });
-                }
-                else
-                {
-                    return StatusCode((int)response.StatusCode, new { message = "Failed to retrieve indexes", error = responseBody });
-                }
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error retrieving indexes", error = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// Describes a specific index
-        /// </summary>
-        /// <param name="indexName">Name of the index to describe</param>
-        /// <returns>Detailed information about the index</returns>
-        [HttpGet("describe/{indexName}")]
-        public async Task<IActionResult> DescribeIndex(string indexName)
+                ["chunk_text"] = "AAPL reported a year-over-year revenue increase, expecting stronger Q3 demand for its flagship phones.",
+                ["category"] = "technology",
+                ["quarter"] = "Q3",
+            },
+        },
+        new UpsertRecord
         {
-            var apiKey = _configuration["Pinecone:ApiKey"];
-            var environment = _configuration["Pinecone:Environment"];
-            var projectId = _configuration["Pinecone:ProjectId"];
-
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(environment))
+            Id = "rec2",
+            AdditionalProperties =
             {
-                return BadRequest("Pinecone API key or environment is not configured.");
-            }
-
-            try
+                ["chunk_text"] = "AAPL may consider healthcare integrations in Q4 to compete with tech rivals entering the consumer wellness space.",
+                ["category"] = "technology",
+                ["quarter"] = "Q4",
+            },
+        },
+        new UpsertRecord
+        {
+            Id = "rec3",
+            AdditionalProperties =
             {
-                var client = _httpClientFactory.CreateClient("PineconeClient");
-                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Api-Key", apiKey);
-                if (!string.IsNullOrWhiteSpace(projectId))
-                {
-                    if (!client.DefaultRequestHeaders.Contains("x-project-id"))
-                        client.DefaultRequestHeaders.Add("x-project-id", projectId);
-                }
-
-                var response = await client.GetAsync($"https://controller.{environment}.pinecone.io/databases/{indexName}");
-                var responseBody = await response.Content.ReadAsStringAsync();
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return Ok(new { message = "Index details retrieved successfully", index = responseBody });
-                }
-                else
-                {
-                    return StatusCode((int)response.StatusCode, new { message = "Failed to retrieve index details", error = responseBody });
-                }
-            }
-            catch (Exception ex)
+                ["chunk_text"] = "AAPL may consider healthcare integrations in Q4 to compete with tech rivals entering the consumer wellness space.",
+                ["category"] = "technology",
+                ["quarter"] = "Q4",
+            },
+        },
+        new UpsertRecord
+        {
+            Id = "rec4",
+            AdditionalProperties =
             {
-                return StatusCode(500, new { message = "Error retrieving index details", error = ex.Message });
-            }
+                ["chunk_text"] = "AAPL's strategic Q3 partnerships with semiconductor suppliers could mitigate component risks and stabilize iPhone production",
+                ["category"] = "technology",
+                ["quarter"] = "Q3",
+            },
+        },
+    ]
+);
+            return Ok(new { message = "Serverless index creation initiated", details = "Check console for response details." });
+
         }
+
     }
 
-    // Request models that match the Pinecone SDK structure
-    public class ServerlessIndexRequest
+// Request models that match the Pinecone SDK structure
+public class ServerlessIndexRequest
     {
         public string Name { get; set; } = string.Empty;
         public int Dimension { get; set; }
@@ -347,5 +184,11 @@ namespace EmailContentApi.Controllers
         public string Environment { get; set; } = "us-east1-gcp";
         public string PodType { get; set; } = "p1.x1";
         public int Pods { get; set; } = 1;
+    }
+
+    public class UpsertRecordRequest
+    {
+        public string Id { get; set; } = string.Empty;
+        public Dictionary<string, object> AdditionalProperties { get; set; } = new();
     }
 } 

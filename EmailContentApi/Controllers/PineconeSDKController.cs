@@ -466,7 +466,7 @@ namespace EmailContentApi.Controllers
                 }
 
                 // Upsert records in batches (Pinecone recommends batches of 100)
-                const int batchSize = 100;
+                const int batchSize = 96;
                 var totalUpserted = 0;
 
                 for (int i = 0; i < upsertRecords.Count; i += batchSize)
@@ -893,6 +893,268 @@ namespace EmailContentApi.Controllers
             var adjustedTokens = baseTokens + punctuationTokens + specialTokens - (specialTokens * 0.5);
 
             return Math.Max(1, (int)Math.Round(adjustedTokens));
+        }
+
+        /// <summary>
+        /// Analyzes email database to identify related emails and threads
+        /// </summary>
+        /// <returns>Analysis of email relationships and threads</returns>
+        [HttpGet("email-relationship-analysis")]
+        public async Task<IActionResult> EmailRelationshipAnalysis()
+        {
+            try
+            {
+                var allEmails = await _dbContext.EmailContents.ToListAsync();
+                
+                if (!allEmails.Any())
+                {
+                    return BadRequest(new { error = "No email content found in database" });
+                }
+
+                var analysis = new
+                {
+                    totalEmails = allEmails.Count,
+                    dateRange = new
+                    {
+                        earliest = allEmails.Min(e => e.CreatedAt),
+                        latest = allEmails.Max(e => e.CreatedAt),
+                        span = (allEmails.Max(e => e.CreatedAt) - allEmails.Min(e => e.CreatedAt)).Days
+                    },
+                    emailTypes = AnalyzeEmailTypes(allEmails),
+                    potentialThreads = FindPotentialEmailThreads(allEmails),
+                    commonTopics = ExtractCommonTopics(allEmails),
+                    senderRecipientPatterns = AnalyzeSenderRecipientPatterns(allEmails)
+                };
+
+                return Ok(analysis);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "An error occurred during email analysis", details = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Analyzes email types and categories
+        /// </summary>
+        private object AnalyzeEmailTypes(List<EmailContent> emails)
+        {
+            var typeCounts = new Dictionary<string, int>();
+            var subjectPatterns = new Dictionary<string, int>();
+
+            foreach (var email in emails)
+            {
+                var content = email.Content.ToLower();
+                
+                // Categorize by content patterns
+                if (content.Contains("meeting") || content.Contains("schedule") || content.Contains("call"))
+                    typeCounts["Meeting/Scheduling"] = typeCounts.GetValueOrDefault("Meeting/Scheduling", 0) + 1;
+                
+                if (content.Contains("support") || content.Contains("issue") || content.Contains("problem") || content.Contains("order"))
+                    typeCounts["Customer Support"] = typeCounts.GetValueOrDefault("Customer Support", 0) + 1;
+                
+                if (content.Contains("project") || content.Contains("update") || content.Contains("progress"))
+                    typeCounts["Project Updates"] = typeCounts.GetValueOrDefault("Project Updates", 0) + 1;
+                
+                if (content.Contains("sales") || content.Contains("pricing") || content.Contains("demo") || content.Contains("inquiry"))
+                    typeCounts["Sales/Inquiry"] = typeCounts.GetValueOrDefault("Sales/Inquiry", 0) + 1;
+                
+                if (content.Contains("policy") || content.Contains("office") || content.Contains("hr"))
+                    typeCounts["Internal Policy"] = typeCounts.GetValueOrDefault("Internal Policy", 0) + 1;
+                
+                if (content.Contains("thank") || content.Contains("feedback") || content.Contains("gratitude"))
+                    typeCounts["Feedback/Thank You"] = typeCounts.GetValueOrDefault("Feedback/Thank You", 0) + 1;
+                
+                if (content.Contains("api") || content.Contains("technical") || content.Contains("integration"))
+                    typeCounts["Technical Discussion"] = typeCounts.GetValueOrDefault("Technical Discussion", 0) + 1;
+                
+                if (content.Contains("invitation") || content.Contains("event") || content.Contains("conference"))
+                    typeCounts["Event/Invitation"] = typeCounts.GetValueOrDefault("Event/Invitation", 0) + 1;
+                
+                if (content.Contains("newsletter") || content.Contains("monthly"))
+                    typeCounts["Newsletter"] = typeCounts.GetValueOrDefault("Newsletter", 0) + 1;
+                
+                if (content.Contains("follow-up") || content.Contains("discussion"))
+                    typeCounts["Follow-up"] = typeCounts.GetValueOrDefault("Follow-up", 0) + 1;
+
+                // Extract subject lines
+                var lines = email.Content.Split('\n');
+                foreach (var line in lines)
+                {
+                    if (line.Trim().StartsWith("Subject:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var subject = line.Replace("Subject:", "").Trim();
+                        subjectPatterns[subject] = subjectPatterns.GetValueOrDefault(subject, 0) + 1;
+                        break;
+                    }
+                }
+            }
+
+            return new
+            {
+                categories = typeCounts.OrderByDescending(x => x.Value),
+                commonSubjects = subjectPatterns.OrderByDescending(x => x.Value).Take(10)
+            };
+        }
+
+        /// <summary>
+        /// Finds potential email threads based on content similarity
+        /// </summary>
+        private object FindPotentialEmailThreads(List<EmailContent> emails)
+        {
+            var potentialThreads = new List<object>();
+            var processedEmails = new HashSet<int>();
+
+            for (int i = 0; i < emails.Count; i++)
+            {
+                if (processedEmails.Contains(i)) continue;
+
+                var thread = new List<EmailContent> { emails[i] };
+                processedEmails.Add(i);
+
+                // Look for related emails based on content similarity
+                for (int j = i + 1; j < emails.Count; j++)
+                {
+                    if (processedEmails.Contains(j)) continue;
+
+                    var similarity = CalculateContentSimilarity(emails[i].Content, emails[j].Content);
+                    if (similarity > 0.3) // 30% similarity threshold
+                    {
+                        thread.Add(emails[j]);
+                        processedEmails.Add(j);
+                    }
+                }
+
+                if (thread.Count > 1)
+                {
+                    potentialThreads.Add(new
+                    {
+                        threadId = potentialThreads.Count + 1,
+                        emailCount = thread.Count,
+                        emails = thread.Select(e => new
+                        {
+                            id = e.Id,
+                            subject = ExtractSubject(e.Content),
+                            createdAt = e.CreatedAt,
+                            contentPreview = e.Content.Substring(0, Math.Min(100, e.Content.Length)) + "..."
+                        }).ToList(),
+                        commonTopics = ExtractCommonTopics(thread)
+                    });
+                }
+            }
+
+            return new
+            {
+                totalThreads = potentialThreads.Count,
+                threads = potentialThreads.Take(5), // Show top 5 threads
+                averageThreadSize = potentialThreads.Any() ? Math.Round(potentialThreads.Average(t => (double)t.GetType().GetProperty("emailCount").GetValue(t)), 2) : 0
+            };
+        }
+
+        /// <summary>
+        /// Extracts common topics from email content
+        /// </summary>
+        private object ExtractCommonTopics(List<EmailContent> emails)
+        {
+            var topicCounts = new Dictionary<string, int>();
+            var keywords = new[]
+            {
+                "meeting", "project", "client", "team", "update", "schedule", "discussion",
+                "support", "issue", "problem", "order", "pricing", "demo", "sales",
+                "policy", "office", "hr", "feedback", "thank", "api", "technical",
+                "integration", "event", "conference", "newsletter", "follow-up"
+            };
+
+            foreach (var email in emails)
+            {
+                var content = email.Content.ToLower();
+                foreach (var keyword in keywords)
+                {
+                    if (content.Contains(keyword))
+                    {
+                        topicCounts[keyword] = topicCounts.GetValueOrDefault(keyword, 0) + 1;
+                    }
+                }
+            }
+
+            return topicCounts.OrderByDescending(x => x.Value).Take(10);
+        }
+
+        /// <summary>
+        /// Analyzes sender and recipient patterns
+        /// </summary>
+        private object AnalyzeSenderRecipientPatterns(List<EmailContent> emails)
+        {
+            var senders = new Dictionary<string, int>();
+            var recipients = new Dictionary<string, int>();
+            var emailPattern = @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}";
+
+            foreach (var email in emails)
+            {
+                var matches = System.Text.RegularExpressions.Regex.Matches(email.Content, emailPattern);
+                foreach (System.Text.RegularExpressions.Match match in matches)
+                {
+                    var emailAddress = match.Value.ToLower();
+                    recipients[emailAddress] = recipients.GetValueOrDefault(emailAddress, 0) + 1;
+                }
+
+                // Extract sender names from signature patterns
+                var lines = email.Content.Split('\n');
+                foreach (var line in lines)
+                {
+                    if (line.Contains("Best regards,") || line.Contains("Thanks,") || line.Contains("Sincerely,"))
+                    {
+                        var nextLine = lines.Skip(Array.IndexOf(lines, line) + 1).FirstOrDefault();
+                        if (!string.IsNullOrWhiteSpace(nextLine) && !nextLine.Contains("@"))
+                        {
+                            var senderName = nextLine.Trim();
+                            if (senderName.Length > 2 && senderName.Length < 50)
+                            {
+                                senders[senderName] = senders.GetValueOrDefault(senderName, 0) + 1;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            return new
+            {
+                topSenders = senders.OrderByDescending(x => x.Value).Take(5),
+                topRecipients = recipients.OrderByDescending(x => x.Value).Take(5),
+                uniqueSenders = senders.Count,
+                uniqueRecipients = recipients.Count
+            };
+        }
+
+        /// <summary>
+        /// Calculates content similarity between two emails
+        /// </summary>
+        private double CalculateContentSimilarity(string content1, string content2)
+        {
+            var words1 = content1.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+            var words2 = content2.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+
+            var intersection = words1.Intersect(words2).Count();
+            var union = words1.Union(words2).Count();
+
+            return union > 0 ? (double)intersection / union : 0;
+        }
+
+        /// <summary>
+        /// Extracts subject line from email content
+        /// </summary>
+        private string ExtractSubject(string content)
+        {
+            var lines = content.Split('\n');
+            foreach (var line in lines)
+            {
+                if (line.Trim().StartsWith("Subject:", StringComparison.OrdinalIgnoreCase))
+                {
+                    return line.Replace("Subject:", "").Trim();
+                }
+            }
+            return "No Subject";
         }
     }
 

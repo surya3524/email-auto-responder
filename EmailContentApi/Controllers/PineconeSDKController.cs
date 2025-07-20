@@ -4,6 +4,9 @@ using System.Text.Json;
 using System.Text;
 using System.Text.Json.Serialization;
 using Pinecone;
+using EmailContentApi.Data;
+using EmailContentApi.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace EmailContentApi.Controllers
 {
@@ -13,11 +16,13 @@ namespace EmailContentApi.Controllers
     {
         private readonly IConfiguration _configuration;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly EmailContentDbContext _dbContext;
 
-        public PineconeSDKController(IConfiguration configuration, IHttpClientFactory httpClientFactory)
+        public PineconeSDKController(IConfiguration configuration, IHttpClientFactory httpClientFactory, EmailContentDbContext dbContext)
         {
             _configuration = configuration;
             _httpClientFactory = httpClientFactory;
+            _dbContext = dbContext;
         }
 
         /// <summary>
@@ -205,7 +210,7 @@ namespace EmailContentApi.Controllers
                             TopK = request.TopK ?? 10,
                             Inputs = new Dictionary<string, object?> { { "text", request.Query } },
                         },
-                        Fields = new[] { "category", "chunk_text" },
+                        Fields = new[] { "category", "chunk_text", "email_id", "created_at", "chunk_index", "total_chunks" },
                     }
                 );
 
@@ -237,9 +242,12 @@ namespace EmailContentApi.Controllers
                 var sourcePassages = relevantPassages.Select(p => new PassageInfo
                 {
                     Id = p.Id,
-
                     Text = p.AdditionalProperties.ContainsKey("chunk_text") ? p.AdditionalProperties["chunk_text"].ToString() ?? "" : "",
                     Category = p.AdditionalProperties.ContainsKey("category") ? p.AdditionalProperties["category"].ToString() ?? "" : "",
+                    EmailId = p.AdditionalProperties.ContainsKey("email_id") ? p.AdditionalProperties["email_id"].ToString() ?? "" : "",
+                    CreatedAt = p.AdditionalProperties.ContainsKey("created_at") ? p.AdditionalProperties["created_at"].ToString() ?? "" : "",
+                    ChunkIndex = p.AdditionalProperties.ContainsKey("chunk_index") ? p.AdditionalProperties["chunk_index"].ToString() ?? "" : "",
+                    TotalChunks = p.AdditionalProperties.ContainsKey("total_chunks") ? p.AdditionalProperties["total_chunks"].ToString() ?? "" : "",
                     Score = p.Score
                 }).ToList();
 
@@ -404,6 +412,488 @@ namespace EmailContentApi.Controllers
                 return StatusCode(500, new { error = "Test failed", details = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Upserts all email content from the database into the Pinecone index
+        /// </summary>
+        /// <returns>Status of the upsert operation</returns>
+        [HttpPost("upsert-email-data")]
+        public async Task<IActionResult> UpsertEmailData()
+        {
+            try
+            {
+                var apiKey = _configuration["Pinecone:ApiKey"];
+                var indexHost = _configuration["Pinecone:IndexHost"];
+
+                var pinecone = new PineconeClient(apiKey);
+                var index = pinecone.Index(host: indexHost);
+
+                // Get all email content from database
+                var emailContents = await _dbContext.EmailContents.ToListAsync();
+                
+                if (!emailContents.Any())
+                {
+                    return BadRequest(new { error = "No email content found in database" });
+                }
+
+                var upsertRecords = new List<UpsertRecord>();
+                var chunkCounter = 0;
+
+                foreach (var email in emailContents)
+                {
+                    // Split email content into chunks (max 1000 characters per chunk)
+                    var chunks = SplitIntoChunks(email.Content, 1000);
+                    
+                    foreach (var chunk in chunks)
+                    {
+                        chunkCounter++;
+                        var recordId = $"email_{email.Id}_chunk_{chunkCounter}";
+                        
+                        upsertRecords.Add(new UpsertRecord
+                        {
+                            Id = recordId,
+                            AdditionalProperties =
+                            {
+                                ["chunk_text"] = chunk,
+                                ["email_id"] = email.Id.ToString(),
+                                ["category"] = "email",
+                                ["created_at"] = email.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                                ["chunk_index"] = chunkCounter.ToString(),
+                                ["total_chunks"] = chunks.Count.ToString()
+                            }
+                        });
+                    }
+                }
+
+                // Upsert records in batches (Pinecone recommends batches of 100)
+                const int batchSize = 100;
+                var totalUpserted = 0;
+
+                for (int i = 0; i < upsertRecords.Count; i += batchSize)
+                {
+                    var batch = upsertRecords.Skip(i).Take(batchSize).ToList();
+                    
+                    await index.UpsertRecordsAsync("example-namespace", batch);
+                    totalUpserted += batch.Count;
+                    
+                    Console.WriteLine($"Upserted batch {i / batchSize + 1}: {batch.Count} records");
+                }
+
+                return Ok(new 
+                { 
+                    message = "Email data upserted successfully", 
+                    totalEmails = emailContents.Count,
+                    totalChunks = chunkCounter,
+                    totalUpserted = totalUpserted
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "An error occurred during email data upsert", details = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Upserts email data with configurable chunk size
+        /// </summary>
+        /// <param name="request">Upsert request with chunk size configuration</param>
+        /// <returns>Status of the upsert operation</returns>
+        [HttpPost("upsert-email-data-configurable")]
+        public async Task<IActionResult> UpsertEmailDataConfigurable([FromBody] UpsertEmailDataRequest request)
+        {
+            try
+            {
+                var apiKey = _configuration["Pinecone:ApiKey"];
+                var indexHost = _configuration["Pinecone:IndexHost"];
+
+                var pinecone = new PineconeClient(apiKey);
+                var index = pinecone.Index(host: indexHost);
+
+                // Validate chunk size
+                if (request.ChunkSize <= 0 || request.ChunkSize > 5000)
+                {
+                    return BadRequest(new { error = "Chunk size must be between 1 and 5000 characters" });
+                }
+
+                // Get all email content from database
+                var emailContents = await _dbContext.EmailContents.ToListAsync();
+                
+                if (!emailContents.Any())
+                {
+                    return BadRequest(new { error = "No email content found in database" });
+                }
+
+                var upsertRecords = new List<UpsertRecord>();
+                var chunkCounter = 0;
+                var chunkSizeAnalysis = new List<ChunkAnalysis>();
+
+                foreach (var email in emailContents)
+                {
+                    var chunks = SplitIntoChunks(email.Content, request.ChunkSize);
+                    
+                    foreach (var chunk in chunks)
+                    {
+                        chunkCounter++;
+                        var recordId = $"email_{email.Id}_chunk_{chunkCounter}";
+                        
+                        // Analyze chunk characteristics
+                        chunkSizeAnalysis.Add(new ChunkAnalysis
+                        {
+                            EmailId = email.Id,
+                            ChunkIndex = chunkCounter,
+                            ChunkSize = chunk.Length,
+                            WordCount = chunk.Split(' ').Length,
+                            SentenceCount = chunk.Split(new[] { '.', '!', '?' }).Length - 1
+                        });
+                        
+                        upsertRecords.Add(new UpsertRecord
+                        {
+                            Id = recordId,
+                            AdditionalProperties =
+                            {
+                                ["chunk_text"] = chunk,
+                                ["email_id"] = email.Id.ToString(),
+                                ["category"] = "email",
+                                ["created_at"] = email.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                                ["chunk_index"] = chunkCounter.ToString(),
+                                ["total_chunks"] = chunks.Count.ToString(),
+                                ["chunk_size"] = chunk.Length.ToString()
+                            }
+                        });
+                    }
+                }
+
+                // Upsert records in batches
+                const int batchSize = 100;
+                var totalUpserted = 0;
+
+                for (int i = 0; i < upsertRecords.Count; i += batchSize)
+                {
+                    var batch = upsertRecords.Skip(i).Take(batchSize).ToList();
+                    await index.UpsertRecordsAsync("example-namespace", batch);
+                    totalUpserted += batch.Count;
+                }
+
+                // Calculate statistics
+                var avgChunkSize = chunkSizeAnalysis.Average(c => c.ChunkSize);
+                var avgWordCount = chunkSizeAnalysis.Average(c => c.WordCount);
+                var avgSentenceCount = chunkSizeAnalysis.Average(c => c.SentenceCount);
+
+                return Ok(new 
+                { 
+                    message = "Email data upserted successfully", 
+                    totalEmails = emailContents.Count,
+                    totalChunks = chunkCounter,
+                    totalUpserted = totalUpserted,
+                    chunkSize = request.ChunkSize,
+                    statistics = new
+                    {
+                        averageChunkSize = Math.Round(avgChunkSize, 2),
+                        averageWordCount = Math.Round(avgWordCount, 2),
+                        averageSentenceCount = Math.Round(avgSentenceCount, 2),
+                        minChunkSize = chunkSizeAnalysis.Min(c => c.ChunkSize),
+                        maxChunkSize = chunkSizeAnalysis.Max(c => c.ChunkSize)
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "An error occurred during email data upsert", details = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Splits text into chunks of specified size
+        /// </summary>
+        /// <param name="text">Text to split</param>
+        /// <param name="maxChunkSize">Maximum size of each chunk</param>
+        /// <returns>List of text chunks</returns>
+        private List<string> SplitIntoChunks(string text, int maxChunkSize)
+        {
+            var chunks = new List<string>();
+            
+            if (string.IsNullOrWhiteSpace(text))
+                return chunks;
+
+            // If text is shorter than max chunk size, return as single chunk
+            if (text.Length <= maxChunkSize)
+            {
+                chunks.Add(text);
+                return chunks;
+            }
+
+            // Split by sentences first, then by words if needed
+            var sentences = text.Split(new[] { '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
+            var currentChunk = "";
+
+            foreach (var sentence in sentences)
+            {
+                var trimmedSentence = sentence.Trim();
+                if (string.IsNullOrWhiteSpace(trimmedSentence))
+                    continue;
+
+                // If adding this sentence would exceed the limit
+                if (currentChunk.Length + trimmedSentence.Length + 1 > maxChunkSize)
+                {
+                    // If current chunk is not empty, add it to chunks
+                    if (!string.IsNullOrWhiteSpace(currentChunk))
+                    {
+                        chunks.Add(currentChunk.Trim());
+                        currentChunk = "";
+                    }
+
+                    // If single sentence is too long, split by words
+                    if (trimmedSentence.Length > maxChunkSize)
+                    {
+                        var words = trimmedSentence.Split(' ');
+                        var wordChunk = "";
+
+                        foreach (var word in words)
+                        {
+                            if (wordChunk.Length + word.Length + 1 > maxChunkSize)
+                            {
+                                if (!string.IsNullOrWhiteSpace(wordChunk))
+                                {
+                                    chunks.Add(wordChunk.Trim());
+                                    wordChunk = "";
+                                }
+                            }
+                            wordChunk += (wordChunk.Length > 0 ? " " : "") + word;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(wordChunk))
+                        {
+                            currentChunk = wordChunk;
+                        }
+                    }
+                    else
+                    {
+                        currentChunk = trimmedSentence;
+                    }
+                }
+                else
+                {
+                    currentChunk += (currentChunk.Length > 0 ? ". " : "") + trimmedSentence;
+                }
+            }
+
+            // Add the last chunk if it's not empty
+            if (!string.IsNullOrWhiteSpace(currentChunk))
+            {
+                chunks.Add(currentChunk.Trim());
+            }
+
+            return chunks;
+        }
+
+        /// <summary>
+        /// Demonstrates the impact of different chunk sizes
+        /// </summary>
+        /// <returns>Analysis of different chunk sizes</returns>
+        [HttpGet("chunk-size-analysis")]
+        public async Task<IActionResult> ChunkSizeAnalysis()
+        {
+            try
+            {
+                // Get a sample email for analysis
+                var sampleEmail = await _dbContext.EmailContents.FirstOrDefaultAsync();
+                
+                if (sampleEmail == null)
+                {
+                    return BadRequest(new { error = "No email content found in database" });
+                }
+
+                var analysis = new List<object>();
+                var chunkSizes = new[] { 500, 1000, 1500, 2000, 3000 };
+
+                foreach (var chunkSize in chunkSizes)
+                {
+                    var chunks = SplitIntoChunks(sampleEmail.Content, chunkSize);
+                    
+                    analysis.Add(new
+                    {
+                        chunkSize = chunkSize,
+                        totalChunks = chunks.Count,
+                        averageChunkSize = chunks.Any() ? Math.Round(chunks.Average(c => c.Length), 2) : 0,
+                        minChunkSize = chunks.Any() ? chunks.Min(c => c.Length) : 0,
+                        maxChunkSize = chunks.Any() ? chunks.Max(c => c.Length) : 0,
+                        sampleChunk = chunks.FirstOrDefault()?.Substring(0, Math.Min(200, chunks.FirstOrDefault()?.Length ?? 0)) + "...",
+                        estimatedTokens = chunks.Any() ? chunks.Sum(c => c.Split(' ').Length * 1.3) : 0 // Rough token estimation
+                    });
+                }
+
+                return Ok(new
+                {
+                    originalEmailLength = sampleEmail.Content.Length,
+                    originalWordCount = sampleEmail.Content.Split(' ').Length,
+                    analysis = analysis,
+                    recommendations = new
+                    {
+                        optimalChunkSize = "1000 characters",
+                        reasons = new[]
+                        {
+                            "Balances context preservation with search precision",
+                            "Fits well within embedding model token limits",
+                            "Provides good LLM prompt efficiency",
+                            "Enables fast Pinecone similarity searches"
+                        }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "An error occurred during chunk size analysis", details = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Demonstrates tokenization and explains token limits
+        /// </summary>
+        /// <returns>Token analysis and explanation</returns>
+        [HttpGet("token-analysis")]
+        public async Task<IActionResult> TokenAnalysis()
+        {
+            try
+            {
+                // Sample texts to demonstrate tokenization
+                var sampleTexts = new[]
+                {
+                    "Hello world",
+                    "Artificial Intelligence and Machine Learning",
+                    "I'm going to the store to buy groceries.",
+                    "The quick brown fox jumps over the lazy dog.",
+                    "Email: john.doe@company.com, Phone: +1-555-123-4567",
+                    "Meeting scheduled for 2024-01-15 at 2:30 PM EST.",
+                    "Please review the attached document and provide feedback by EOD."
+                };
+
+                var tokenAnalysis = new List<object>();
+
+                foreach (var text in sampleTexts)
+                {
+                    // Rough token estimation (actual tokenization varies by model)
+                    var wordCount = text.Split(' ').Length;
+                    var estimatedTokens = EstimateTokens(text);
+                    
+                    tokenAnalysis.Add(new
+                    {
+                        text = text,
+                        characterCount = text.Length,
+                        wordCount = wordCount,
+                        estimatedTokens = estimatedTokens,
+                        tokenToWordRatio = Math.Round((double)estimatedTokens / wordCount, 2),
+                        tokenToCharRatio = Math.Round((double)estimatedTokens / text.Length, 3)
+                    });
+                }
+
+                // Get a sample email for real-world analysis
+                var sampleEmail = await _dbContext.EmailContents.FirstOrDefaultAsync();
+                var emailTokenAnalysis = new object();
+
+                if (sampleEmail != null)
+                {
+                    var emailTokens = EstimateTokens(sampleEmail.Content);
+                    var emailWords = sampleEmail.Content.Split(' ').Length;
+                    
+                    emailTokenAnalysis = new
+                    {
+                        emailLength = sampleEmail.Content.Length,
+                        wordCount = emailWords,
+                        estimatedTokens = emailTokens,
+                        tokenToWordRatio = Math.Round((double)emailTokens / emailWords, 2),
+                        tokenToCharRatio = Math.Round((double)emailTokens / sampleEmail.Content.Length, 3)
+                    };
+                }
+
+                return Ok(new
+                {
+                    explanation = new
+                    {
+                        whatAreTokens = "Tokens are the basic units of text that AI models process. They can be words, parts of words, punctuation, or special characters.",
+                        tokenizationExamples = new
+                        {
+                            simpleWords = "Hello world = 2 tokens",
+                            compoundWords = "Artificial Intelligence = 2 tokens",
+                            punctuation = "Hello, world! = 3 tokens (comma and exclamation are separate)",
+                            specialContent = "2024-01-15 = 1 token (date as single unit)",
+                            emailAddress = "john.doe@company.com = 1 token"
+                        }
+                    },
+                    tokenLimits = new
+                    {
+                        embeddingModels = new
+                        {
+                            textEmbedding3Small = "8192 tokens",
+                            textEmbedding3Large = "8192 tokens",
+                            ada002 = "8192 tokens"
+                        },
+                        languageModels = new
+                        {
+                            gpt35Turbo = "4096 tokens",
+                            gpt4 = "8192 tokens",
+                            gpt4Turbo = "128000 tokens"
+                        },
+                        pineconeLimits = new
+                        {
+                            metadataSize = "40KB per vector",
+                            vectorDimensions = "Up to 4096 dimensions"
+                        }
+                    },
+                    sampleAnalysis = tokenAnalysis,
+                    emailAnalysis = emailTokenAnalysis,
+                    recommendations = new
+                    {
+                        chunkSize = "1000 characters ≈ 150-200 tokens",
+                        reasoning = new[]
+                        {
+                            "Fits comfortably within embedding model limits (8192 tokens)",
+                            "Leaves room for metadata and system overhead",
+                            "Allows multiple chunks in LLM context window",
+                            "Provides good balance of context and precision"
+                        }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "An error occurred during token analysis", details = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Estimates token count for text (rough approximation)
+        /// </summary>
+        /// <param name="text">Text to estimate tokens for</param>
+        /// <returns>Estimated token count</returns>
+        private int EstimateTokens(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return 0;
+
+            // This is a rough estimation - actual tokenization varies by model
+            var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var baseTokens = words.Length;
+
+            // Add tokens for punctuation and special characters
+            var punctuationTokens = text.Count(c => ".,!?;:()[]{}'\"".Contains(c));
+            
+            // Add tokens for special patterns (emails, dates, numbers, etc.)
+            var emailPattern = @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}";
+            var datePattern = @"\d{4}-\d{2}-\d{2}";
+            var phonePattern = @"\+\d{1,3}-\d{3}-\d{3}-\d{4}";
+            
+            var emailMatches = System.Text.RegularExpressions.Regex.Matches(text, emailPattern).Count;
+            var dateMatches = System.Text.RegularExpressions.Regex.Matches(text, datePattern).Count;
+            var phoneMatches = System.Text.RegularExpressions.Regex.Matches(text, phonePattern).Count;
+
+            // Special patterns often count as single tokens
+            var specialTokens = emailMatches + dateMatches + phoneMatches;
+            
+            // Subtract some tokens since special patterns reduce word count
+            var adjustedTokens = baseTokens + punctuationTokens + specialTokens - (specialTokens * 0.5);
+
+            return Math.Max(1, (int)Math.Round(adjustedTokens));
+        }
     }
 
     // Request/Response DTOs for augmented search
@@ -430,6 +920,10 @@ namespace EmailContentApi.Controllers
         public string Id { get; set; } = string.Empty;
         public string Text { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
+        public string EmailId { get; set; } = string.Empty;
+        public string CreatedAt { get; set; } = string.Empty;
+        public string ChunkIndex { get; set; } = string.Empty;
+        public string TotalChunks { get; set; } = string.Empty;
         public double Score { get; set; }
     }
 
@@ -533,5 +1027,19 @@ public class ServerlessIndexRequest
     {
         public string Id { get; set; } = string.Empty;
         public Dictionary<string, object> AdditionalProperties { get; set; } = new();
+    }
+
+    public class UpsertEmailDataRequest
+    {
+        public int ChunkSize { get; set; }
+    }
+
+    public class ChunkAnalysis
+    {
+        public int EmailId { get; set; }
+        public int ChunkIndex { get; set; }
+        public int ChunkSize { get; set; }
+        public int WordCount { get; set; }
+        public int SentenceCount { get; set; }
     }
 } 

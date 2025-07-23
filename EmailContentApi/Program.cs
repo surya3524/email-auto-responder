@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using EmailContentApi.Data;
+using EmailContentApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +50,9 @@ builder.Services.AddSwaggerGen(c =>
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
 });
+
+// Register secure configuration service
+builder.Services.AddSingleton<SecureConfigurationService>();
 
 // Configure Entity Framework with AWS Database
 builder.Services.AddDbContext<EmailContentDbContext>(options =>

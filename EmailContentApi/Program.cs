@@ -3,8 +3,30 @@ using Microsoft.OpenApi.Models;
 using System.Reflection;
 using EmailContentApi.Data;
 using EmailContentApi.Services;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Azure Key Vault configuration for production
+if (builder.Environment.IsProduction())
+{
+    var keyVaultUrl = builder.Configuration["KeyVault:VaultUrl"];
+    if (!string.IsNullOrEmpty(keyVaultUrl))
+    {
+        try
+        {
+            // Add Key Vault configuration using managed identity
+            builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
+            Console.WriteLine("Azure Key Vault configuration added successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Could not connect to Azure Key Vault: {ex.Message}");
+            Console.WriteLine("Falling back to application settings for configuration.");
+        }
+    }
+}
 
 // Add services to the container.
 builder.Services.AddControllers();

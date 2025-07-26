@@ -213,6 +213,46 @@
     ]
   },
   {
+    "ContainingType": "EmailContentApi.Controllers.EnronEmailController",
+    "Method": "AnalyzeEnronEmails",
+    "RelativePath": "api/EnronEmail/analyze-enron-emails",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.EnronEmailController",
+    "Method": "GetEnronEmails",
+    "RelativePath": "api/EnronEmail/get-enron-emails",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.EnronEmailController",
+    "Method": "Insert1000EnronEmails",
+    "RelativePath": "api/EnronEmail/insert-1000-enron-emails",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.EnronEmailController",
+    "Method": "InsertEnronEmails",
+    "RelativePath": "api/EnronEmail/insert-enron-emails",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "EmailContentApi.Controllers.OpenAIController",
     "Method": "GenerateEmbedding",
     "RelativePath": "api/OpenAI/embed",
@@ -265,57 +305,67 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "EmailContentApi.Controllers.PineconeController",
-    "Method": "CreateIndex",
-    "RelativePath": "api/Pinecone/create-index",
+    "ContainingType": "EmailContentApi.Controllers.PineconeSDKController",
+    "Method": "AugmentedSearch",
+    "RelativePath": "api/PineconeSDK/augmented-search",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
         "Name": "request",
-        "Type": "EmailContentApi.Controllers.PineconeIndexRequest",
+        "Type": "EmailContentApi.Controllers.AugmentedSearchRequest",
         "IsRequired": true
       }
     ],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "EmailContentApi.Controllers.PineconeIndexController",
-    "Method": "CreateIndex",
-    "RelativePath": "api/PineconeIndex/create",
-    "HttpMethod": "POST",
+    "ContainingType": "EmailContentApi.Controllers.PineconeSDKController",
+    "Method": "ChunkSizeAnalysis",
+    "RelativePath": "api/PineconeSDK/chunk-size-analysis",
+    "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "EmailContentApi.Controllers.PineconeIndexController",
-    "Method": "CreateCustomIndex",
-    "RelativePath": "api/PineconeIndex/create-custom",
+    "ContainingType": "EmailContentApi.Controllers.PineconeSDKController",
+    "Method": "CreateServerlessIndex",
+    "RelativePath": "api/PineconeSDK/create-serverless",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
         "Name": "request",
-        "Type": "EmailContentApi.Controllers.PineconeIndexRequest",
+        "Type": "EmailContentApi.Controllers.ServerlessIndexRequest",
         "IsRequired": true
       }
     ],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "EmailContentApi.Controllers.PineconeIndexController",
-    "Method": "DeleteIndex",
-    "RelativePath": "api/PineconeIndex/delete/{indexName}",
-    "HttpMethod": "DELETE",
+    "ContainingType": "EmailContentApi.Controllers.PineconeSDKController",
+    "Method": "EmailRelationshipAnalysis",
+    "RelativePath": "api/PineconeSDK/email-relationship-analysis",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.PineconeSDKController",
+    "Method": "SemanticSearch",
+    "RelativePath": "api/PineconeSDK/semantic-search",
+    "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "indexName",
+        "Name": "queryText",
         "Type": "System.String",
         "IsRequired": true
       }
@@ -323,9 +373,9 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "EmailContentApi.Controllers.PineconeIndexController",
-    "Method": "ListIndexes",
-    "RelativePath": "api/PineconeIndex/list",
+    "ContainingType": "EmailContentApi.Controllers.PineconeSDKController",
+    "Method": "TestAugmentedSearch",
+    "RelativePath": "api/PineconeSDK/test-augmented-search",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
@@ -333,13 +383,55 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "EmailContentApi.Controllers.PineconeIndexController",
-    "Method": "TestPinecone",
-    "RelativePath": "api/PineconeIndex/test",
+    "ContainingType": "EmailContentApi.Controllers.PineconeSDKController",
+    "Method": "TokenAnalysis",
+    "RelativePath": "api/PineconeSDK/token-analysis",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.PineconeSDKController",
+    "Method": "UpsertEmailData",
+    "RelativePath": "api/PineconeSDK/upsert-email-data",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.PineconeSDKController",
+    "Method": "UpsertEmailDataConfigurable",
+    "RelativePath": "api/PineconeSDK/upsert-email-data-configurable",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "EmailContentApi.Controllers.UpsertEmailDataRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "EmailContentApi.Controllers.PineconeSDKController",
+    "Method": "UpsertRecords",
+    "RelativePath": "api/PineconeSDK/upsert-records",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "records",
+        "Type": "System.Collections.Generic.List\u00601[[EmailContentApi.Controllers.UpsertRecordRequest, EmailContentApi, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "IsRequired": true
+      }
+    ],
     "ReturnTypes": []
   }
 ]

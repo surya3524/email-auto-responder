@@ -50,6 +50,14 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "Azure.Identity": {
+              "target": "Package",
+              "version": "[1.10.4, )"
+            },
+            "Azure.Security.KeyVault.Secrets": {
+              "target": "Package",
+              "version": "[4.5.0, )"
+            },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[9.0.4, )"
@@ -71,6 +79,10 @@
             "OpenAI": {
               "target": "Package",
               "version": "[2.2.0, )"
+            },
+            "Pinecone.Client": {
+              "target": "Package",
+              "version": "[4.0.2, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",

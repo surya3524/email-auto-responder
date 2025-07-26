@@ -71,6 +71,90 @@
             <returns>The total count of email contents</returns>
             <response code="200">Returns the count</response>
         </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.InsertEnronEmails">
+            <summary>
+            Fetches and inserts related emails from Enron dataset
+            </summary>
+            <returns>Status of the Enron email insertion</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.Insert1000EnronEmails">
+            <summary>
+            Fetches and inserts 1000 emails from Enron dataset with API integration
+            </summary>
+            <returns>Status of the Enron email insertion with 1000 records</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.AnalyzeEnronEmails">
+            <summary>
+            Analyzes Enron emails in the database
+            </summary>
+            <returns>Analysis of Enron email patterns and relationships</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.GetEnronEmails">
+            <summary>
+            Gets all Enron emails from the database
+            </summary>
+            <returns>List of Enron emails</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.ParseEnronEmails(System.String)">
+            <summary>
+            Parses Enron email format
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.GenerateEnronStyleEmails">
+            <summary>
+            Generates realistic Enron-style emails when external data is unavailable
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.AnalyzeEnronEmailTypes(System.Collections.Generic.List{EmailContentApi.Models.EmailContent})">
+            <summary>
+            Analyzes Enron email types and categories
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.AnalyzeEnronSenderRecipientPatterns(System.Collections.Generic.List{EmailContentApi.Models.EmailContent})">
+            <summary>
+            Analyzes Enron sender and recipient patterns
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.ExtractEnronCommonTopics(System.Collections.Generic.List{EmailContentApi.Models.EmailContent})">
+            <summary>
+            Extracts common topics from Enron emails
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.FindEnronEmailThreads(System.Collections.Generic.List{EmailContentApi.Models.EmailContent})">
+            <summary>
+            Finds potential Enron email threads
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.CalculateContentSimilarity(System.String,System.String)">
+            <summary>
+            Calculates content similarity between two emails
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.ExtractSubject(System.String)">
+            <summary>
+            Extracts subject line from email content
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.ExtractSender(System.String)">
+            <summary>
+            Extracts sender from email content
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.ExtractRecipient(System.String)">
+            <summary>
+            Extracts recipient from email content
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.GenerateEnronStyleEmails(System.Int32)">
+            <summary>
+            Generates realistic Enron-style emails with count parameter
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.EnronEmailController.GenerateAdditionalEmails(System.Int32,System.Collections.Generic.List{EmailContentApi.Models.EmailContent},System.Random)">
+            <summary>
+            Generates additional emails based on existing API emails to reach target count
+            </summary>
+        </member>
         <member name="M:EmailContentApi.Controllers.OpenAIController.TestOpenAI">
             <summary>
             Test OpenAI API key connectivity
@@ -97,53 +181,118 @@
             <param name="id">The email ID</param>
             <returns>The email content with its embedding</returns>
         </member>
-        <member name="M:EmailContentApi.Controllers.PineconeController.CreateIndex(EmailContentApi.Controllers.PineconeIndexRequest)">
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.CreateServerlessIndex(EmailContentApi.Controllers.ServerlessIndexRequest)">
             <summary>
-            Creates a new index in Pinecone
+            Creates a serverless Pinecone index
             </summary>
-            <param name="request">The index creation request</param>
+            <param name="request">Serverless index creation request</param>
             <returns>Status of the index creation</returns>
         </member>
-        <member name="M:EmailContentApi.Controllers.PineconeIndexController.TestPinecone">
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.UpsertRecords(System.Collections.Generic.List{EmailContentApi.Controllers.UpsertRecordRequest})">
             <summary>
-            Test Pinecone API connectivity and credentials
+            Adds records to an existing Pinecone index
             </summary>
-            <returns>API key status and test result</returns>
+            <param name="records">List of records to upsert</param>
+            <returns>Status of the upsert operation</returns>
         </member>
-        <member name="M:EmailContentApi.Controllers.PineconeIndexController.CreateIndex">
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.AugmentedSearch(EmailContentApi.Controllers.AugmentedSearchRequest)">
             <summary>
-            Creates a new Pinecone index using the specified configuration
+            Performs semantic search and generates an augmented LLM response
             </summary>
-            <returns>Status of the index creation</returns>
+            <param name="request">Query request with optional parameters</param>
+            <returns>Generated response based on retrieved context</returns>
         </member>
-        <member name="M:EmailContentApi.Controllers.PineconeIndexController.CreateCustomIndex(EmailContentApi.Controllers.PineconeIndexRequest)">
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.ConstructAugmentedPrompt(System.Collections.Generic.List{Pinecone.Hit},System.String)">
             <summary>
-            Creates a Pinecone index with custom configuration
+            Constructs an augmented prompt with retrieved context
             </summary>
-            <param name="request">Custom index configuration</param>
-            <returns>Status of the index creation</returns>
         </member>
-        <member name="M:EmailContentApi.Controllers.PineconeIndexController.ListIndexes">
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.GenerateLLMResponse(System.String,System.String)">
             <summary>
-            Lists all Pinecone indexes
+            Generates LLM response using OpenAI API
             </summary>
-            <returns>List of all indexes</returns>
         </member>
-        <member name="M:EmailContentApi.Controllers.PineconeIndexController.DeleteIndex(System.String)">
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.TestAugmentedSearch">
             <summary>
-            Deletes a Pinecone index
+            Test endpoint to verify augmented search functionality
             </summary>
-            <param name="indexName">Name of the index to delete</param>
-            <returns>Status of the index deletion</returns>
+            <returns>Test response</returns>
         </member>
-        <member name="M:EmailContentApi.Controllers.PineconeIndexController.CreatePineconeIndexAsync(System.Net.Http.HttpClient,System.String,EmailContentApi.Controllers.PineconeIndexRequest)">
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.UpsertEmailData">
             <summary>
-            Creates a Pinecone index using the provided configuration
+            Upserts all email content from the database into the Pinecone index
             </summary>
-            <param name="client">HTTP client</param>
-            <param name="environment">Pinecone environment</param>
-            <param name="customConfig">Optional custom configuration</param>
-            <returns>Creation result</returns>
+            <returns>Status of the upsert operation</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.UpsertEmailDataConfigurable(EmailContentApi.Controllers.UpsertEmailDataRequest)">
+            <summary>
+            Upserts email data with configurable chunk size
+            </summary>
+            <param name="request">Upsert request with chunk size configuration</param>
+            <returns>Status of the upsert operation</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.SplitIntoChunks(System.String,System.Int32)">
+            <summary>
+            Splits text into chunks of specified size
+            </summary>
+            <param name="text">Text to split</param>
+            <param name="maxChunkSize">Maximum size of each chunk</param>
+            <returns>List of text chunks</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.ChunkSizeAnalysis">
+            <summary>
+            Demonstrates the impact of different chunk sizes
+            </summary>
+            <returns>Analysis of different chunk sizes</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.TokenAnalysis">
+            <summary>
+            Demonstrates tokenization and explains token limits
+            </summary>
+            <returns>Token analysis and explanation</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.EstimateTokens(System.String)">
+            <summary>
+            Estimates token count for text (rough approximation)
+            </summary>
+            <param name="text">Text to estimate tokens for</param>
+            <returns>Estimated token count</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.EmailRelationshipAnalysis">
+            <summary>
+            Analyzes email database to identify related emails and threads
+            </summary>
+            <returns>Analysis of email relationships and threads</returns>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.AnalyzeEmailTypes(System.Collections.Generic.List{EmailContentApi.Models.EmailContent})">
+            <summary>
+            Analyzes email types and categories
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.FindPotentialEmailThreads(System.Collections.Generic.List{EmailContentApi.Models.EmailContent})">
+            <summary>
+            Finds potential email threads based on content similarity
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.ExtractCommonTopics(System.Collections.Generic.List{EmailContentApi.Models.EmailContent})">
+            <summary>
+            Extracts common topics from email content
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.AnalyzeSenderRecipientPatterns(System.Collections.Generic.List{EmailContentApi.Models.EmailContent})">
+            <summary>
+            Analyzes sender and recipient patterns
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.CalculateContentSimilarity(System.String,System.String)">
+            <summary>
+            Calculates content similarity between two emails
+            </summary>
+        </member>
+        <member name="M:EmailContentApi.Controllers.PineconeSDKController.ExtractSubject(System.String)">
+            <summary>
+            Extracts subject line from email content
+            </summary>
         </member>
         <member name="T:EmailContentApi.Migrations.InitialCreate">
             <inheritdoc />

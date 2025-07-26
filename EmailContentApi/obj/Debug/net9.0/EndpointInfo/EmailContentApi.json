@@ -340,6 +340,58 @@
         }
       }
     },
+    "/api/EnronEmail/insert-enron-emails": {
+      "post": {
+        "tags": [
+          "EnronEmail"
+        ],
+        "summary": "Fetches and inserts related emails from Enron dataset",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/EnronEmail/insert-1000-enron-emails": {
+      "post": {
+        "tags": [
+          "EnronEmail"
+        ],
+        "summary": "Fetches and inserts 1000 emails from Enron dataset with API integration",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/EnronEmail/analyze-enron-emails": {
+      "get": {
+        "tags": [
+          "EnronEmail"
+        ],
+        "summary": "Analyzes Enron emails in the database",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/EnronEmail/get-enron-emails": {
+      "get": {
+        "tags": [
+          "EnronEmail"
+        ],
+        "summary": "Gets all Enron emails from the database",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/OpenAI/test": {
       "get": {
         "tags": [
@@ -424,28 +476,28 @@
         }
       }
     },
-    "/api/Pinecone/create-index": {
+    "/api/PineconeSDK/create-serverless": {
       "post": {
         "tags": [
-          "Pinecone"
+          "PineconeSDK"
         ],
-        "summary": "Creates a new index in Pinecone",
+        "summary": "Creates a serverless Pinecone index",
         "requestBody": {
-          "description": "The index creation request",
+          "description": "Serverless index creation request",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PineconeIndexRequest"
+                "$ref": "#/components/schemas/ServerlessIndexRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/PineconeIndexRequest"
+                "$ref": "#/components/schemas/ServerlessIndexRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/PineconeIndexRequest"
+                "$ref": "#/components/schemas/ServerlessIndexRequest"
               }
             }
           }
@@ -457,54 +509,37 @@
         }
       }
     },
-    "/api/PineconeIndex/test": {
-      "get": {
-        "tags": [
-          "PineconeIndex"
-        ],
-        "summary": "Test Pinecone API connectivity and credentials",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/PineconeIndex/create": {
+    "/api/PineconeSDK/upsert-records": {
       "post": {
         "tags": [
-          "PineconeIndex"
+          "PineconeSDK"
         ],
-        "summary": "Creates a new Pinecone index using the specified configuration",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/PineconeIndex/create-custom": {
-      "post": {
-        "tags": [
-          "PineconeIndex"
-        ],
-        "summary": "Creates a Pinecone index with custom configuration",
+        "summary": "Adds records to an existing Pinecone index",
         "requestBody": {
-          "description": "Custom index configuration",
+          "description": "List of records to upsert",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PineconeIndexRequest"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/UpsertRecordRequest"
+                }
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/PineconeIndexRequest"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/UpsertRecordRequest"
+                }
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/PineconeIndexRequest"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/UpsertRecordRequest"
+                }
               }
             }
           }
@@ -516,12 +551,30 @@
         }
       }
     },
-    "/api/PineconeIndex/list": {
-      "get": {
+    "/api/PineconeSDK/semantic-search": {
+      "post": {
         "tags": [
-          "PineconeIndex"
+          "PineconeSDK"
         ],
-        "summary": "Lists all Pinecone indexes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -529,23 +582,130 @@
         }
       }
     },
-    "/api/PineconeIndex/delete/{indexName}": {
-      "delete": {
+    "/api/PineconeSDK/augmented-search": {
+      "post": {
         "tags": [
-          "PineconeIndex"
+          "PineconeSDK"
         ],
-        "summary": "Deletes a Pinecone index",
-        "parameters": [
-          {
-            "name": "indexName",
-            "in": "path",
-            "description": "Name of the index to delete",
-            "required": true,
-            "schema": {
-              "type": "string"
+        "summary": "Performs semantic search and generates an augmented LLM response",
+        "requestBody": {
+          "description": "Query request with optional parameters",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AugmentedSearchRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AugmentedSearchRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AugmentedSearchRequest"
+              }
             }
           }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/PineconeSDK/test-augmented-search": {
+      "get": {
+        "tags": [
+          "PineconeSDK"
         ],
+        "summary": "Test endpoint to verify augmented search functionality",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/PineconeSDK/upsert-email-data": {
+      "post": {
+        "tags": [
+          "PineconeSDK"
+        ],
+        "summary": "Upserts all email content from the database into the Pinecone index",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/PineconeSDK/upsert-email-data-configurable": {
+      "post": {
+        "tags": [
+          "PineconeSDK"
+        ],
+        "summary": "Upserts email data with configurable chunk size",
+        "requestBody": {
+          "description": "Upsert request with chunk size configuration",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertEmailDataRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertEmailDataRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertEmailDataRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/PineconeSDK/chunk-size-analysis": {
+      "get": {
+        "tags": [
+          "PineconeSDK"
+        ],
+        "summary": "Demonstrates the impact of different chunk sizes",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/PineconeSDK/token-analysis": {
+      "get": {
+        "tags": [
+          "PineconeSDK"
+        ],
+        "summary": "Demonstrates tokenization and explains token limits",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/PineconeSDK/email-relationship-analysis": {
+      "get": {
+        "tags": [
+          "PineconeSDK"
+        ],
+        "summary": "Analyzes email database to identify related emails and threads",
         "responses": {
           "200": {
             "description": "OK"
@@ -556,6 +716,34 @@
   },
   "components": {
     "schemas": {
+      "AugmentedSearchRequest": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "nullable": true
+          },
+          "topK": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "scoreThreshold": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "maxPassages": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "includePrompt": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateEmailContentDto": {
         "type": "object",
         "properties": {
@@ -594,40 +782,6 @@
         },
         "additionalProperties": false
       },
-      "PineconeIndexRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "dimension": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "metric": {
-            "type": "string",
-            "nullable": true
-          },
-          "replicas": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "shards": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pods": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pod_type": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -654,6 +808,79 @@
           }
         },
         "additionalProperties": { }
+      },
+      "ServerlessIndexRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "dimension": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "metric": {
+            "type": "string",
+            "nullable": true
+          },
+          "spec": {
+            "$ref": "#/components/schemas/ServerlessIndexSpec"
+          },
+          "deletionProtection": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ServerlessIndexSpec": {
+        "type": "object",
+        "properties": {
+          "serverless": {
+            "$ref": "#/components/schemas/ServerlessSpec"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ServerlessSpec": {
+        "type": "object",
+        "properties": {
+          "cloud": {
+            "type": "string",
+            "nullable": true
+          },
+          "region": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpsertEmailDataRequest": {
+        "type": "object",
+        "properties": {
+          "chunkSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpsertRecordRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": { },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
       }
     }
   }

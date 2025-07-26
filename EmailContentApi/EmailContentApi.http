@@ -88,3 +88,90 @@ GET https://localhost:7001/api/PineconeIndex/list
 
 ### Delete Pinecone index
 DELETE https://localhost:7001/api/PineconeIndex/delete/emails-index
+
+### Create Serverless Pinecone Index (SDK-style)
+POST https://localhost:7001/api/PineconeSDK/create-serverless
+Content-Type: application/json
+
+{
+  "Name": "docs-example1",
+  "Dimension": 1536,
+  "Metric": "cosine",
+  "Spec": {
+    "Serverless": {
+      "Cloud": "aws",
+      "Region": "us-east-1"
+    }
+  },
+  "DeletionProtection": "disabled"
+}
+
+### Create Pod-based Pinecone Index (SDK-style)
+POST https://localhost:7001/api/PineconeSDK/create-pod
+Content-Type: application/json
+
+{
+  "Name": "pod-index",
+  "Dimension": 1536,
+  "Metric": "cosine",
+  "Spec": {
+    "Pod": {
+      "Environment": "us-east1-gcp",
+      "PodType": "p1.x1",
+      "Pods": 1
+    }
+  },
+  "DeletionProtection": "disabled"
+}
+
+### List all indexes with detailed information
+GET https://localhost:7001/api/PineconeSDK/list-detailed
+
+### Describe specific index
+GET https://localhost:7001/api/PineconeSDK/describe/docs-example1
+
+### Create Serverless Pinecone Index (Official SDK Pattern)
+POST https://localhost:7001/api/PineconeOfficial/create-serverless
+Content-Type: application/json
+
+{
+  "Name": "emails-serverless",
+  "Dimension": 1536,
+  "Region": "us-east-1"
+}
+
+### Create Pod-based Pinecone Index (Official SDK Pattern)
+POST https://localhost:7001/api/PineconeOfficial/create-pod
+Content-Type: application/json
+
+{
+  "Name": "emails-pod",
+  "Dimension": 1536,
+  "Environment": "us-east1-gcp",
+  "PodType": "p1.x1",
+  "Pods": 1
+}
+
+### List all indexes (Official SDK Pattern)
+GET https://localhost:7001/api/PineconeOfficial/list
+
+### Describe specific index (Official SDK Pattern)
+GET https://localhost:7001/api/PineconeOfficial/describe/emails-serverless
+
+### Delete index (Official SDK Pattern)
+DELETE https://localhost:7001/api/PineconeOfficial/delete/emails-serverless
+
+### Test Pinecone API Key Authentication
+GET https://localhost:7001/api/PineconeAuth/test-api-key
+
+### Test Pinecone JWT Bearer Authentication
+GET https://localhost:7001/api/PineconeAuth/test-jwt
+
+### Test Pinecone API Key Header Authentication
+GET https://localhost:7001/api/PineconeAuth/test-api-key-header
+
+### Get Pinecone Authentication Configuration
+GET https://localhost:7001/api/PineconeAuth/config
+
+### Test All Pinecone Authentication Methods
+GET https://localhost:7001/api/PineconeAuth/test-all
